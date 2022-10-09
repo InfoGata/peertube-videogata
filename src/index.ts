@@ -9,6 +9,7 @@ import {
 import axios from "axios";
 import { UiMessageType } from "./types";
 
+const nsfw = "false";
 const instance = "https://sepiasearch.org";
 
 const searchPlaylists = async (
@@ -23,15 +24,24 @@ const searchPlaylists = async (
   url.searchParams.append("start", start.toString());
   const result = await axios.get<ResultList<VideoPlaylist>>(url.toString());
 
-  const items: PlaylistInfo[] = result.data.data.map((playlist) => ({
-    name: playlist.displayName,
-    apiId: `${playlist.ownerAccount.host}_${playlist.uuid}`,
-    images: playlist.thumbnailUrl
-      ? [{ url: playlist.thumbnailUrl }]
-      : undefined,
-  }));
+  const items = result.data.data.map(
+    (playlist): PlaylistInfo => ({
+      name: playlist.displayName,
+      apiId: `${playlist.ownerAccount.host}_${playlist.uuid}`,
+      images: playlist.thumbnailUrl
+        ? [{ url: playlist.thumbnailUrl }]
+        : undefined,
+    })
+  );
 
-  return { items };
+  return {
+    items,
+    pageInfo: {
+      totalResults: result.data.total,
+      resultsPerPage: count,
+      offset: start,
+    },
+  };
 };
 
 const searchChannels = async (
@@ -45,17 +55,30 @@ const searchChannels = async (
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
   const result = await axios.get<ResultList<VideoChannel>>(url.toString());
-  const items: Channel[] = result.data.data.map((channel) => ({
-    name: channel.name,
-    apiId: `${channel.name}@${channel.host}`,
-  }));
+  const items = result.data.data.map(
+    (channel): Channel => ({
+      name: channel.name,
+      apiId: `${channel.name}@${channel.host}`,
+      images:
+        channel.avatar && channel.avatar.url
+          ? [{ url: channel.avatar.url }]
+          : undefined,
+    })
+  );
 
   return {
     items,
+    pageInfo: {
+      totalResults: result.data.total,
+      resultsPerPage: count,
+      offset: start,
+    },
   };
 };
 
 const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
+  const url = `https://${video.channel.host}`;
+  const apiId = `${video.channel.name}@${video.channel.host}`;
   return {
     title: video.name,
     apiId: `${video.account.host}_${video.uuid}`,
@@ -68,8 +91,9 @@ const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
       typeof video.createdAt === "string"
         ? video.createdAt
         : video.createdAt.toISOString(),
-    channelName: video.name,
-    images: video.thumbnailUrl ? [{ url: video.thumbnailUrl }] : undefined,
+    channelName: video.channel.displayName,
+    channelApiId: apiId,
+    images: [{ url: `${url}${video.thumbnailPath}` }],
   };
 };
 
@@ -83,6 +107,7 @@ const searchVideos = async (
   url.searchParams.append("search", request.query);
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
+  url.searchParams.append("nsfw", nsfw.toString());
   const result = await axios.get<ResultList<PeertubeVideo>>(url.toString());
   const items: Video[] = result.data.data.map(peertubeVideoToVideo);
 
@@ -140,7 +165,14 @@ const getChannelVideos = async (
   const result = await axios.get<ResultList<PeertubeVideo>>(url.toString());
   const items: Video[] = result.data.data.map(peertubeVideoToVideo);
 
-  return { items };
+  return {
+    items,
+    pageInfo: {
+      totalResults: result.data.total,
+      resultsPerPage: count,
+      offset: start,
+    },
+  };
 };
 
 const getPlaylistVideos = async (
@@ -164,7 +196,14 @@ const getPlaylistVideos = async (
     .filter((v): v is PeertubeVideo => !!v)
     .map(peertubeVideoToVideo);
 
-  return { items };
+  return {
+    items,
+    pageInfo: {
+      totalResults: result.data.total,
+      resultsPerPage: count,
+      offset: start,
+    },
+  };
 };
 
 application.onSearchAll = searchAll;
