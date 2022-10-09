@@ -15,7 +15,7 @@ const searchPlaylists = async (
   request: SearchRequest
 ): Promise<SearchPlaylistResult> => {
   const count = 15;
-  const start = request.page?.offset || 0;
+  const start = request.pageInfo?.offset || 0;
   const path = `/api/v1/search/video-playlists`;
   const url = new URL(`${instance}${path}`);
   url.searchParams.append("search", request.query);
@@ -38,7 +38,7 @@ const searchChannels = async (
   request: SearchRequest
 ): Promise<SearchChannelResult> => {
   const count = 15;
-  const start = request.page?.offset || 0;
+  const start = request.pageInfo?.offset || 0;
   const path = `/api/v1/search/video-channels`;
   const url = new URL(`${instance}${path}`);
   url.searchParams.append("search", request.query);
@@ -50,7 +50,9 @@ const searchChannels = async (
     apiId: `${channel.name}@${channel.host}`,
   }));
 
-  return { items };
+  return {
+    items,
+  };
 };
 
 const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
@@ -75,7 +77,7 @@ const searchVideos = async (
   request: SearchRequest
 ): Promise<SearchVideoResult> => {
   const count = 15;
-  const start = request.page?.offset || 0;
+  const start = request.pageInfo?.offset || 0;
   const path = "/api/v1/search/videos";
   const url = new URL(`${instance}${path}`);
   url.searchParams.append("search", request.query);
@@ -126,7 +128,7 @@ const getVideo = async (request: GetVideoRequest): Promise<Video> => {
 const getChannelVideos = async (
   request: ChannelVideosRequest
 ): Promise<ChannelVideosResult> => {
-  const start = request.page?.offset || 0;
+  const start = request.pageInfo?.offset || 0;
   const count = 15;
   const apiId = request.apiId || "";
   const [_name, host] = apiId.split("@");
@@ -144,7 +146,7 @@ const getChannelVideos = async (
 const getPlaylistVideos = async (
   request: PlaylistVideoRequest
 ): Promise<PlaylistVideosResult> => {
-  const start = request.page?.offset || 0;
+  const start = request.pageInfo?.offset || 0;
   const count = 15;
 
   const apiId = request.apiId || "";
