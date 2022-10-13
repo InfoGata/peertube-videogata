@@ -1,4 +1,3 @@
-import "videogata-plugin-typings";
 import {
   ResultList,
   Video as PeertubeVideo,
