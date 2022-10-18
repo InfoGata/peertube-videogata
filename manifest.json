@@ -4,5 +4,6 @@
   "version": "1.1.2",
   "script": "dist/index.js",
   "player": "dist/player.html",
-  "description": "Plugin for playing videos from peertube"
+  "description": "Plugin for playing videos from peertube",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/InfoGata/peertube-videogata@latest/manifest.json"
 }
