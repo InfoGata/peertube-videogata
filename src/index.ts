@@ -11,6 +11,33 @@ import { UiMessageType } from "./types";
 const nsfw = "false";
 const instance = "https://sepiasearch.org";
 
+const startDateToSearchFilter = (dateString?: string): string | undefined => {
+  const day = 86400 * 1000;
+  switch (dateString) {
+    case "today":
+      return new Date(Date.now() - day).toISOString();
+    case "week":
+      return new Date(Date.now() - day * 7).toISOString();
+    case "month":
+      return new Date(Date.now() - day * 30).toISOString();
+    case "year":
+      return new Date(Date.now() - day * 365).toISOString();
+  }
+};
+
+const durationToSearchFilter = (
+  durationString?: string
+): [number?, number?] | undefined => {
+  switch (durationString) {
+    case "short":
+      return [undefined, 4 * 60];
+    case "medium":
+      return [4 * 60, 10 * 60];
+    case "long":
+      return [10 * 60, undefined];
+  }
+};
+
 const searchPlaylists = async (
   request: SearchRequest
 ): Promise<SearchPlaylistResult> => {
@@ -107,6 +134,84 @@ const searchVideos = async (
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
   url.searchParams.append("nsfw", nsfw.toString());
+
+  if (request.filterInfo?.filters) {
+    const filters = request.filterInfo.filters;
+    filters.forEach((f) => {
+      switch (f.id) {
+        case "startDate":
+          const searchFilter = startDateToSearchFilter(f.value);
+          if (searchFilter) {
+            url.searchParams.append("startDate", searchFilter);
+          }
+          break;
+        case "duration":
+          const durationTuple = durationToSearchFilter(f.value);
+          if (durationTuple) {
+            if (durationTuple[0]) {
+              url.searchParams.append(
+                "durationMin",
+                durationTuple[0].toString()
+              );
+            }
+            if (durationTuple[1]) {
+              url.searchParams.append(
+                "durationMax",
+                durationTuple[1].toString()
+              );
+            }
+          }
+          break;
+        case "sort":
+          url.searchParams.append("sort", f.value || "-match");
+          break;
+      }
+    });
+  } else {
+    url.searchParams.append("sort", "-match");
+  }
+
+  const filterInfo: FilterInfo = {
+    filters: [
+      {
+        id: "sort",
+        type: "select",
+        displayName: "Sort by",
+        value: "-match",
+        options: [
+          { displayName: "Best match", value: "-match" },
+          { displayName: "Most recent", value: "-publishedAt" },
+          { displayName: "Least recent", value: "publishedAt" },
+        ],
+      },
+      {
+        id: "startDate",
+        type: "radio",
+        displayName: "Published Date",
+        value: "",
+        options: [
+          { displayName: "Any", value: "" },
+          { displayName: "Last 24 Hours", value: "today" },
+          { displayName: "Last 7 days", value: "week" },
+          { displayName: "Last 30 days", value: "month" },
+          { displayName: "Last 365 days", value: "year" },
+        ],
+      },
+      {
+        id: "duration",
+        type: "radio",
+        displayName: "Duration",
+        value: "",
+        options: [
+          { displayName: "Any", value: "" },
+          { displayName: "Short (< 4 min)", value: "short" },
+          { displayName: "Medium (4-10 min)", value: "medium" },
+          { displayName: "Long (> 10 min)", value: "long" },
+        ],
+      },
+    ],
+  };
+
   const result = await axios.get<ResultList<PeertubeVideo>>(url.toString());
   const items: Video[] = result.data.data.map(peertubeVideoToVideo);
 
@@ -117,6 +222,7 @@ const searchVideos = async (
       resultsPerPage: count,
       offset: start,
     },
+    filterInfo,
   };
 };
 
