@@ -1,19 +1,15 @@
 {
   "name": "peertube-videogata",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "",
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@emotion/react": "^11.7.1",
-    "@emotion/styled": "^11.6.0",
-    "@mui/material": "^5.4.2",
+    "@infogata/videogata-plugin-typings": "1.1.0",
     "@peertube/embed-api": "^0.0.6",
     "@peertube/peertube-types": "^4.0.0-beta.4",
-    "axios": "^0.21.1",
     "iso8601-duration": "^2.1.1",
-    "preact": "^10.8.2",
-    "@infogata/videogata-plugin-typings": "1.1.0"
+    "ky": "^1.7.5"
   },
   "scripts": {
     "build": "parcel build src/index.ts src/player.html --dist-dir dist/ --no-source-maps",
@@ -25,7 +21,6 @@
   },
   "devDependencies": {
     "parcel": "^2.5.0",
-    "process": "^0.11.10",
     "typescript": "^4.2.3"
   },
   "browserslist": [

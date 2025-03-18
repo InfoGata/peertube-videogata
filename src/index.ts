@@ -5,7 +5,7 @@ import {
   VideoPlaylist,
   VideoPlaylistElement,
 } from "@peertube/peertube-types";
-import axios from "axios";
+import ky from "ky";
 import { UiMessageType } from "./types";
 
 const nsfw = "false";
@@ -48,9 +48,9 @@ const searchPlaylists = async (
   url.searchParams.append("search", request.query);
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
-  const result = await axios.get<ResultList<VideoPlaylist>>(url.toString());
+  const result = await ky.get<ResultList<VideoPlaylist>>(url.toString()).json();
 
-  const items = result.data.data.map(
+  const items = result.data.map(
     (playlist): PlaylistInfo => ({
       name: playlist.displayName,
       apiId: `${playlist.ownerAccount.host}_${playlist.uuid}`,
@@ -63,7 +63,7 @@ const searchPlaylists = async (
   return {
     items,
     pageInfo: {
-      totalResults: result.data.total,
+      totalResults: result.total,
       resultsPerPage: count,
       offset: start,
     },
@@ -80,8 +80,8 @@ const searchChannels = async (
   url.searchParams.append("search", request.query);
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
-  const result = await axios.get<ResultList<VideoChannel>>(url.toString());
-  const items = result.data.data.map(
+  const result = await ky.get<ResultList<VideoChannel>>(url.toString()).json();
+  const items = result.data.map(
     (channel): Channel => ({
       name: channel.name,
       apiId: `${channel.name}@${channel.host}`,
@@ -95,7 +95,7 @@ const searchChannels = async (
   return {
     items,
     pageInfo: {
-      totalResults: result.data.total,
+      totalResults: result.total,
       resultsPerPage: count,
       offset: start,
     },
@@ -212,13 +212,13 @@ const searchVideos = async (
     ],
   };
 
-  const result = await axios.get<ResultList<PeertubeVideo>>(url.toString());
-  const items: Video[] = result.data.data.map(peertubeVideoToVideo);
+  const result = await ky.get<ResultList<PeertubeVideo>>(url.toString()).json();
+  const items: Video[] = result.data.map(peertubeVideoToVideo);
 
   return {
     items,
     pageInfo: {
-      totalResults: result.data.total,
+      totalResults: result.total,
       resultsPerPage: count,
       offset: start,
     },
@@ -250,8 +250,8 @@ const getVideo = async (request: GetVideoRequest): Promise<Video> => {
   const [host, uuid] = request.apiId.split("_");
   const path = `/api/v1/videos/${uuid}`;
   const url = `https://${host}${path}`;
-  const result = await axios.get<PeertubeVideo>(url);
-  const video = peertubeVideoToVideo(result.data);
+  const result = await ky.get<PeertubeVideo>(url).json();
+  const video = peertubeVideoToVideo(result);
   return video;
 };
 
@@ -267,13 +267,13 @@ const getChannelVideos = async (
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
 
-  const result = await axios.get<ResultList<PeertubeVideo>>(url.toString());
-  const items: Video[] = result.data.data.map(peertubeVideoToVideo);
+  const result = await ky.get<ResultList<PeertubeVideo>>(url.toString()).json();
+  const items: Video[] = result.data.map(peertubeVideoToVideo);
 
   return {
     items,
     pageInfo: {
-      totalResults: result.data.total,
+      totalResults: result.total,
       resultsPerPage: count,
       offset: start,
     },
@@ -293,10 +293,10 @@ const getPlaylistVideos = async (
   url.searchParams.append("count", count.toString());
   url.searchParams.append("start", start.toString());
 
-  const result = await axios.get<ResultList<VideoPlaylistElement>>(
+  const result = await ky.get<ResultList<VideoPlaylistElement>>(
     url.toString()
-  );
-  const items: Video[] = result.data.data
+  ).json();
+  const items: Video[] = result.data
     .map((d) => d.video)
     .filter((v): v is PeertubeVideo => !!v)
     .map(peertubeVideoToVideo);
@@ -304,7 +304,7 @@ const getPlaylistVideos = async (
   return {
     items,
     pageInfo: {
-      totalResults: result.data.total,
+      totalResults: result.total,
       resultsPerPage: count,
       offset: start,
     },
