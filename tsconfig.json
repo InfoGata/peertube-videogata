@@ -5,7 +5,9 @@
     "moduleResolution": "node",
     "outDir": "./dist",
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
     "strict": true,
+    "allowJs": true,
     "lib": [
       "es6",
       "es7",
