@@ -11,7 +11,7 @@ import { UiMessageType } from "./types";
 const nsfw = "false";
 const instance = "https://sepiasearch.org";
 
-const startDateToSearchFilter = (dateString?: string): string | undefined => {
+export const startDateToSearchFilter = (dateString?: string): string | undefined => {
   const day = 86400 * 1000;
   switch (dateString) {
     case "today":
@@ -25,7 +25,7 @@ const startDateToSearchFilter = (dateString?: string): string | undefined => {
   }
 };
 
-const durationToSearchFilter = (
+export const durationToSearchFilter = (
   durationString?: string
 ): [number?, number?] | undefined => {
   switch (durationString) {
@@ -38,7 +38,7 @@ const durationToSearchFilter = (
   }
 };
 
-const searchPlaylists = async (
+export const searchPlaylists = async (
   request: SearchRequest
 ): Promise<SearchPlaylistResult> => {
   const count = 15;
@@ -70,7 +70,7 @@ const searchPlaylists = async (
   };
 };
 
-const searchChannels = async (
+export const searchChannels = async (
   request: SearchRequest
 ): Promise<SearchChannelResult> => {
   const count = 15;
@@ -86,8 +86,8 @@ const searchChannels = async (
       name: channel.name,
       apiId: `${channel.name}@${channel.host}`,
       images:
-        channel.avatar && channel.avatar.url
-          ? [{ url: channel.avatar.url }]
+        channel.avatars && channel.avatars.length > 0
+          ? [{ url: channel.avatars[0].fileUrl }]
           : undefined,
     })
   );
@@ -102,7 +102,7 @@ const searchChannels = async (
   };
 };
 
-const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
+export const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
   const url = `https://${video.channel.host}`;
   const apiId = `${video.channel.name}@${video.channel.host}`;
   return {
@@ -123,7 +123,7 @@ const peertubeVideoToVideo = (video: PeertubeVideo): Video => {
   };
 };
 
-const searchVideos = async (
+export const searchVideos = async (
   request: SearchRequest
 ): Promise<SearchVideoResult> => {
   const count = 15;
@@ -226,7 +226,7 @@ const searchVideos = async (
   };
 };
 
-const searchAll = async (request: SearchRequest): Promise<SearchAllResult> => {
+export const searchAll = async (request: SearchRequest): Promise<SearchAllResult> => {
   const videosPromise = searchVideos(request);
   const channelsPromise = searchChannels(request);
   const playlistsPromise = searchPlaylists(request);
@@ -246,7 +246,7 @@ application.onUiMessage = async (message: UiMessageType) => {
   }
 };
 
-const getVideo = async (request: GetVideoRequest): Promise<Video> => {
+export const getVideo = async (request: GetVideoRequest): Promise<Video> => {
   const [host, uuid] = request.apiId.split("_");
   const path = `/api/v1/videos/${uuid}`;
   const url = `https://${host}${path}`;
@@ -255,7 +255,7 @@ const getVideo = async (request: GetVideoRequest): Promise<Video> => {
   return video;
 };
 
-const getChannelVideos = async (
+export const getChannelVideos = async (
   request: ChannelVideosRequest
 ): Promise<ChannelVideosResult> => {
   const start = request.pageInfo?.offset || 0;
@@ -280,7 +280,7 @@ const getChannelVideos = async (
   };
 };
 
-const getPlaylistVideos = async (
+export const getPlaylistVideos = async (
   request: PlaylistVideoRequest
 ): Promise<PlaylistVideosResult> => {
   const start = request.pageInfo?.offset || 0;
