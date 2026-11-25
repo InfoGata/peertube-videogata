@@ -22,6 +22,8 @@ const {
   getVideo,
   getChannelVideos,
   getPlaylistVideos,
+  getTopItems,
+  topItemsInstances,
 } = await import("./index");
 
 // Get mock references
@@ -371,5 +373,59 @@ describe("getPlaylistVideos", () => {
     } as PlaylistVideoRequest);
 
     expect(result.items).toHaveLength(1);
+  });
+});
+
+describe("getTopItems", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("asks each instance for its own trending videos", async () => {
+    mockJson.mockResolvedValue({ data: [], total: 0 });
+
+    await getTopItems();
+
+    expect(mockGet).toHaveBeenCalledTimes(topItemsInstances.length);
+    const urls = mockGet.mock.calls.map((c) => new URL(c[0]));
+    expect(urls.map((u) => u.origin)).toEqual(topItemsInstances);
+    for (const url of urls) {
+      expect(url.pathname).toBe("/api/v1/videos");
+      expect(url.searchParams.get("sort")).toBe("-trending");
+      expect(url.searchParams.get("isLocal")).toBe("true");
+      expect(url.searchParams.get("nsfw")).toBe("false");
+    }
+  });
+
+  it("interleaves the instances' lists", async () => {
+    const list = (prefix: string) => ({
+      data: [1, 2].map((n) => makePeertubeVideo({ name: `${prefix}${n}`, uuid: `${prefix}${n}` })),
+      total: 2,
+    });
+    mockJson
+      .mockResolvedValueOnce(list("a"))
+      .mockResolvedValueOnce(list("b"))
+      .mockResolvedValueOnce(list("c"));
+
+    const result = await getTopItems();
+
+    expect(result.videos?.items.map((v) => v.title)).toEqual(["a1", "b1", "c1", "a2", "b2", "c2"]);
+  });
+
+  it("still returns videos when some instances fail", async () => {
+    mockJson
+      .mockRejectedValueOnce(new Error("down"))
+      .mockResolvedValueOnce({ data: [makePeertubeVideo()], total: 1 })
+      .mockRejectedValueOnce(new Error("down"));
+
+    const result = await getTopItems();
+
+    expect(result.videos?.items).toHaveLength(1);
+  });
+
+  it("throws when every instance fails", async () => {
+    mockJson.mockRejectedValue(new Error("down"));
+
+    await expect(getTopItems()).rejects.toThrow();
   });
 });

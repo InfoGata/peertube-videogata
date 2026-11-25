@@ -311,7 +311,51 @@ export const getPlaylistVideos = async (
   };
 };
 
+// Sepia Search indexes videos but has no trending feed, so the home page reads
+// trending straight from a few well-run instances. Each one serves CORS headers,
+// so this works without the extension. `isLocal` keeps each list to what the
+// instance hosts itself rather than whatever it happens to federate with.
+export const topItemsInstances = [
+  "https://tilvids.com",
+  "https://video.blender.org",
+  "https://framatube.org",
+];
+
+export const getTopItems = async (): Promise<SearchAllResult> => {
+  const count = 10;
+  const results = await Promise.allSettled(
+    topItemsInstances.map((instanceUrl) => {
+      const url = new URL(`${instanceUrl}/api/v1/videos`);
+      url.searchParams.append("sort", "-trending");
+      url.searchParams.append("count", count.toString());
+      url.searchParams.append("nsfw", nsfw);
+      url.searchParams.append("isLocal", "true");
+      return ky.get<ResultList<PeertubeVideo>>(url.toString()).json();
+    })
+  );
+  const lists = results
+    .filter(
+      (r): r is PromiseFulfilledResult<ResultList<PeertubeVideo>> =>
+        r.status === "fulfilled"
+    )
+    .map((r) => r.value.data.map(peertubeVideoToVideo));
+  // Only fail when every instance did: one being down shouldn't empty the page.
+  if (lists.length === 0) {
+    throw new Error("Could not load trending videos from any instance");
+  }
+
+  // Interleave, so the page doesn't open on one instance's whole list.
+  const items: Video[] = [];
+  for (let i = 0; i < count; i++) {
+    for (const list of lists) {
+      if (list[i]) items.push(list[i]);
+    }
+  }
+  return { videos: { items } };
+};
+
 application.onSearchAll = searchAll;
+application.onGetTopItems = getTopItems;
 application.onSearchVideos = searchVideos;
 application.onSearchChannels = searchChannels;
 application.onGetChannelVideos = getChannelVideos;
